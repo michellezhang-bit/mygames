@@ -1,0 +1,332 @@
+import React, { useState, useEffect } from 'react';
+import { BookOpen, Clock, Users, Building2, Trophy, Copy, RefreshCw, PenTool, School } from 'lucide-react';
+
+const App = () => {
+  // 初始状态
+  const initialState = {
+    schoolName: '',
+    location: '',
+    studentCount: '',
+    teacherCount: '',
+    facilities: [],
+    customFacility: '',
+    totalPeriods: '',
+    startTime: '',
+    firstPeriod: '',
+    favoriteSubject: '',
+    afterSchoolActivity: '',
+    feeling: ''
+  };
+
+  const [data, setData] = useState(initialState);
+  const [showTips, setShowTips] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  // 词汇建议库
+  const vocab = {
+    facilities: ['图书馆 (Library)', '体育馆 (Gym)', '食堂 (Cafeteria)', '操场 (Playground)', '游泳池 (Swimming Pool)', '电脑室 (Computer Lab)'],
+    subjects: ['中文 (Chinese)', '英文 (English)', '数学 (Math)', '科学 (Science)', '历史 (History)', '美术 (Art)', '音乐 (Music)', '体育 (PE)'],
+    activities: ['打篮球 (Play Basketball)', '踢足球 (Play Soccer)', '画画 (Drawing)', '做作业 (Do Homework)', '听音乐 (Listen to Music)']
+  };
+
+  const handleInputChange = (field, value) => {
+    setData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const toggleFacility = (facility) => {
+    const cleanName = facility.split(' (')[0]; // 只取中文部分
+    setData(prev => {
+      const exists = prev.facilities.includes(cleanName);
+      if (exists) {
+        return { ...prev, facilities: prev.facilities.filter(f => f !== cleanName) };
+      } else {
+        return { ...prev, facilities: [...prev.facilities, cleanName] };
+      }
+    });
+  };
+
+  // 生成最终作文
+  const generateEssay = () => {
+    const parts = [];
+    
+    // Part 1: Intro
+    if (data.schoolName) {
+      let text = `我的学校叫${data.schoolName}。`;
+      if (data.location) text += `它位于${data.location}。`;
+      if (data.studentCount) text += `学校里有${data.studentCount}个学生`;
+      if (data.teacherCount) text += `和${data.teacherCount}位老师`;
+      if (data.studentCount || data.teacherCount) text += `。`;
+      parts.push(text);
+    }
+
+    // Part 2: Facilities
+    if (data.facilities.length > 0 || data.customFacility) {
+      let facList = [...data.facilities];
+      if (data.customFacility) facList.push(data.customFacility);
+      let text = `我们的学校很大，设施非常齐全。学校里有${facList.join('、')}。`;
+      parts.push(text);
+    }
+
+    // Part 3: Schedule
+    if (data.totalPeriods || data.startTime || data.firstPeriod) {
+      let text = '';
+      if (data.totalPeriods) text += `我一天有${data.totalPeriods}节课。`;
+      if (data.startTime) text += `我们要${data.startTime}到校。`;
+      if (data.firstPeriod) text += `第一节课是${data.firstPeriod}。`;
+      if (data.favoriteSubject) text += `我最喜欢的科目是${data.favoriteSubject}。`;
+      parts.push(text);
+    }
+
+    // Part 4: Activities & Conclusion
+    if (data.afterSchoolActivity) {
+      parts.push(`放学后，我通常会${data.afterSchoolActivity}。`);
+    }
+    
+    if (data.feeling) {
+      parts.push(`我觉得${data.feeling}。`);
+    } else if (parts.length > 0) {
+      parts.push(`我很喜欢我的学校。`);
+    }
+
+    return parts.length > 0 ? parts.join('\n\n') : '请在左侧填写内容，作文将在这里生成...';
+  };
+
+  const copyToClipboard = () => {
+    const text = generateEssay();
+    if (text && !text.startsWith('请在左侧')) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
+      {/* Header */}
+      <header className="bg-teal-600 text-white p-6 shadow-md">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center">
+          <div className="flex items-center gap-3 mb-4 md:mb-0">
+            <School size={32} />
+            <div>
+              <h1 className="text-2xl font-bold">中文写作助手：我的学校</h1>
+              <p className="text-teal-100 text-sm">Chinese Writing Assistant: My School</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setData(initialState)}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-700 hover:bg-teal-800 rounded-lg transition-colors text-sm"
+          >
+            <RefreshCw size={16} /> 重置 (Reset)
+          </button>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Left Column: Input Sections */}
+        <div className="space-y-6">
+          
+          {/* Section 1: Basic Info */}
+          <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-teal-700 mb-4 pb-2 border-b border-slate-100">
+              <Building2 size={24} /> 1. 学校概况 (General Info)
+            </h2>
+            <div className="space-y-4">
+              <InputGroup label="我的学校叫..." pinyin="Wǒ de xuéxiào jiào..." placeholder="例如：北京国际学校" 
+                value={data.schoolName} onChange={(v) => handleInputChange('schoolName', v)} />
+              
+              <InputGroup label="它位于..." pinyin="Tā wèiyú..." placeholder="例如：市中心 / 上海" 
+                value={data.location} onChange={(v) => handleInputChange('location', v)} />
+
+              <div className="grid grid-cols-2 gap-4">
+                <InputGroup label="有...个学生" pinyin="Yǒu... gè xuéshēng" placeholder="例如：500" type="number"
+                  value={data.studentCount} onChange={(v) => handleInputChange('studentCount', v)} />
+                <InputGroup label="有...位老师" pinyin="Yǒu... wèi lǎoshī" placeholder="例如：40" type="number"
+                  value={data.teacherCount} onChange={(v) => handleInputChange('teacherCount', v)} />
+              </div>
+            </div>
+          </section>
+
+          {/* Section 2: Facilities */}
+          <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-teal-700 mb-4 pb-2 border-b border-slate-100">
+              <Users size={24} /> 2. 学校设施 (Facilities)
+            </h2>
+            <p className="mb-3 text-sm text-slate-500">学校里有... (选择所有适用的)</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+              {vocab.facilities.map((fac) => (
+                <button
+                  key={fac}
+                  onClick={() => toggleFacility(fac)}
+                  className={`text-sm p-2 rounded-lg border text-left transition-all ${
+                    data.facilities.includes(fac.split(' (')[0])
+                      ? 'bg-teal-100 border-teal-500 text-teal-800 font-medium'
+                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {fac}
+                </button>
+              ))}
+            </div>
+            <InputGroup label="还有..." pinyin="Hái yǒu..." placeholder="其他设施 (Other facility)" 
+              value={data.customFacility} onChange={(v) => handleInputChange('customFacility', v)} />
+          </section>
+
+          {/* Section 3: Schedule & Subjects */}
+          <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-teal-700 mb-4 pb-2 border-b border-slate-100">
+              <Clock size={24} /> 3. 课程与时间 (Schedule & Subjects)
+            </h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <InputGroup label="我一天有...节课" pinyin="Yī tiān yǒu... jié kè" placeholder="例如：6" type="number"
+                  value={data.totalPeriods} onChange={(v) => handleInputChange('totalPeriods', v)} />
+                <InputGroup label="...到校" pinyin="...dào xiào" placeholder="例如：早上八点" 
+                  value={data.startTime} onChange={(v) => handleInputChange('startTime', v)} />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  第一节课是... <span className="text-slate-400 text-xs">(Dì yī jié kè shì...)</span>
+                </label>
+                <select 
+                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                  value={data.firstPeriod}
+                  onChange={(e) => handleInputChange('firstPeriod', e.target.value)}
+                >
+                  <option value="">选择科目 (Select Subject)</option>
+                  {vocab.subjects.map(s => <option key={s} value={s.split(' (')[0]}>{s}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  我最喜欢的科目是... <span className="text-slate-400 text-xs">(Zuì xǐhuān de kēmù...)</span>
+                </label>
+                <input 
+                  type="text"
+                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                  placeholder="Subject name"
+                  value={data.favoriteSubject}
+                  onChange={(e) => handleInputChange('favoriteSubject', e.target.value)}
+                />
+              </div>
+            </div>
+          </section>
+
+           {/* Section 4: Activities */}
+           <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-teal-700 mb-4 pb-2 border-b border-slate-100">
+              <Trophy size={24} /> 4. 课后活动 (After School)
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  放学后，我... <span className="text-slate-400 text-xs">(Fàngxué hòu, wǒ...)</span>
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                   {vocab.activities.map((act) => (
+                      <button
+                        key={act}
+                        onClick={() => handleInputChange('afterSchoolActivity', act.split(' (')[0])}
+                        className="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600"
+                      >
+                        {act}
+                      </button>
+                   ))}
+                </div>
+                <input 
+                  type="text"
+                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                  placeholder="activity"
+                  value={data.afterSchoolActivity}
+                  onChange={(e) => handleInputChange('afterSchoolActivity', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  我觉得我的学校... <span className="text-slate-400 text-xs">(Feeling about school)</span>
+                </label>
+                <input 
+                  type="text"
+                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                  placeholder="例如：很大 / 很漂亮 / 很有趣"
+                  value={data.feeling}
+                  onChange={(e) => handleInputChange('feeling', e.target.value)}
+                />
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Right Column: Live Preview */}
+        <div className="lg:sticky lg:top-8 h-fit">
+          <div className="bg-amber-50 rounded-xl shadow-lg border-2 border-amber-100 overflow-hidden relative">
+            {/* Notebook Header */}
+            <div className="bg-amber-200 h-12 border-b border-amber-300 flex items-center px-4 justify-between">
+              <div className="flex items-center gap-2 text-amber-900 font-bold">
+                <BookOpen size={20} />
+                <span>作文预览 (Preview)</span>
+              </div>
+              <button 
+                onClick={copyToClipboard}
+                className="flex items-center gap-1 text-xs bg-white/50 hover:bg-white text-amber-900 px-3 py-1 rounded transition-colors"
+              >
+                {copied ? '已复制! (Copied)' : <><Copy size={14}/> 复制文本</>}
+              </button>
+            </div>
+
+            {/* Notebook Paper Body */}
+            <div className="p-8 min-h-[500px] font-serif text-lg leading-loose relative">
+              {/* Notebook lines effect */}
+              <div className="absolute inset-0 pointer-events-none" 
+                   style={{
+                     backgroundImage: 'linear-gradient(#e5e7eb 1px, transparent 1px)',
+                     backgroundSize: '100% 2rem',
+                     marginTop: '3.5rem'
+                   }}>
+              </div>
+              
+              {/* Content */}
+              <div className="relative z-10 whitespace-pre-wrap text-slate-800">
+                <h3 className="text-center text-2xl font-bold mb-8">我的学校</h3>
+                {generateEssay()}
+              </div>
+            </div>
+            
+            <div className="bg-amber-100 p-4 text-xs text-amber-800 border-t border-amber-200">
+              <strong>提示 (Tip):</strong> 试着大声朗读你的作文来练习发音！(Try reading your essay aloud to practice pronunciation!)
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  );
+};
+
+// Helper Component for Inputs
+const InputGroup = ({ label, pinyin, placeholder, value, onChange, type = "text" }) => (
+  <div className="flex flex-col">
+    <label className="text-sm font-medium text-slate-700 mb-1">
+      {label} <span className="text-slate-400 text-xs font-normal">({pinyin})</span>
+    </label>
+    <div className="relative">
+      <input
+        type={type}
+        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  </div>
+);
+
+export default App;
